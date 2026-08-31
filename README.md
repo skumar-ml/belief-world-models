@@ -10,7 +10,7 @@
     ·
     <a href="https://saurabhjha.one/"><strong>Saurabh Jha</strong></a><sup>2</sup>    
     <br>
-    <sup>1</sup>Univeristy og Illinois Urbana=Champaign &nbsp;&nbsp;&nbsp; <sup>2</sup>IBM
+    <sup>1</sup>University of Illinois Urbana-Champaign &nbsp;&nbsp;&nbsp; <sup>2</sup>IBM
     <br>
     </br>
         <!-- <a href="#">
