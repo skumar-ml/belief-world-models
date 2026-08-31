@@ -1,4 +1,30 @@
-# Belief-Based World Models
+<p align="center">
+
+  <h2 align="center">Towards a Belief-Based World Model <br>for LLM Agents</h2>
+  <p align="center">
+    <a href="https://skumar-ml.github.io/"><strong>Shubham Kumar</strong></a><sup>1</sup>
+    ·  
+    <a href="https://research.ibm.com/people/harshit-kumar"><strong>Harshit Kumar</strong></a><sup>2</sup>
+    ·
+    <a href="https://vision.ai.illinois.edu/narendra-ahuja/"><strong>Narendra Ahuja</strong></a><sup>1</sup>
+    ·
+    <a href="https://saurabhjha.one/"><strong>Saurabh Jha</strong></a><sup>2</sup>    
+    <br>
+    <sup>1</sup>Univeristy og Illinois Urbana=Champaign &nbsp;&nbsp;&nbsp; <sup>2</sup>IBM
+    <br>
+    </br>
+        <a href="#">
+        <img src='https://img.shields.io/badge/arXiv-BB--WM-green' alt='Paper PDF'>
+        </a>
+        <a href='#'>
+        <img src='https://img.shields.io/badge/Project_Page-BB--WM-blue' alt='Project Page'></a>
+        <!-- <a href='#'>
+        <img src='https://img.shields.io/badge/YouTube-BB--WM-rgb(255, 0, 0)' alt='Youtube'></a> -->
+     </br>
+    <table align="center">
+        <img src="./figures/teaser.gif">
+    </table>
+</p>
 
 Code for reproducing the main experiments in *Towards a Belief-Based World Model for LLM Agents* (BB-WM).
 
