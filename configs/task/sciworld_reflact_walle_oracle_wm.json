@@ -1,0 +1,19 @@
+{
+    "benchmark": "sciworld",
+    "agent": "reflact",
+    "permutation": "walle_oracle_wm",
+    "task": {
+        "task_class": "SciWorldTask",
+        "filepath": ""
+    },
+    "env_config": {
+        "env_class": "WalleWMOracleSciWorldEnv",
+        "push_mode": "none",
+        "instruction_path": "prompt/instructions/sciworld_reflact_walle_oracle_wm_inst.txt",
+        "icl_path": "prompt/icl_examples/sciworld_reflact_wm_pertask_icl.json",
+        "icl_format": "first",
+        "max_steps": 100,
+        "walle_max_retries": 5,
+        "simplification": "noElectricalAction,openDoors,selfWateringFlowerPots,teleportAction,openContainers"
+    }
+}

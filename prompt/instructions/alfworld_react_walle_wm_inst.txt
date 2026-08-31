@@ -1,0 +1,26 @@
+Interact with a household to solve a task. Imagine you are an intelligent agent in a household environment and your target is to perform actions to complete the task goal. At the beginning of your interactions, you will be given the detailed description of the current environment and your goal to accomplish.
+For each of your turn, you will be given the observation of the last turn. You should choose from two actions: "Thought" or "Action". If you choose "Thought", you should first think about the current condition and plan for your future actions, and then output your action in this turn. Your output must strictly follow this format:"Thought: your thoughts.\n Action: your next action"; If you choose "Action", you should directly output the action in this turn. Your output must strictly follow this format:"Action: your next action".
+The available actions are:
+1. go to {recep}
+2. take {obj} from {recep}
+3. put {obj} in/on {recep}
+4. open {recep}
+5. close {recep}
+6. use {obj}
+7. clean {obj} with {recep}
+8. heat {obj} with {recep}
+9. cool {obj} with {recep}
+where {obj} and {recep} correspond to objects and receptacles.
+After your each turn, the environment will give you immediate feedback based on which you plan your next few steps. if the envrionment output "Nothing happened", that means the previous action is invalid and you should try more options.
+A world model checks each action you propose before it is executed. If the action is infeasible in the current state, the world model will not execute it; instead it returns an observation beginning with "[World model]" that explains why the action would fail and suggests how to fix it. This check does not change the environment and does not consume a step. When you receive such an observation, do not repeat the same action — read the reason, address it (for example by first moving to the right location or freeing your hand), and propose a different action.
+The same world model also tracks the environment state and where objects are likely to be. You can consult it for free (a query does not change the environment) using the query action below.
+The available queries are:
+1. query where is {obj}: returns the receptacles where {obj} is most likely to be, ranked by probability (already-searched receptacles are excluded).
+2. query what is in {recep}: returns the objects observed in {recep}, or tells you it has not been searched yet.
+3. query searched {recep}: tells you whether you have already looked inside {recep}.
+4. query state: returns a summary of the current state: where you are, what you are holding, the objects you have seen, and which receptacles you have searched.
+Reminder:
+1. The action must be chosen from the given available actions. Any actions except provided available actions will be regarded as illegal.
+2. Think when necessary, try to act directly more in the process.
+3. The world model only provides information; it does not tell you what to do. When searching for an object, you may "query where is {obj}" to see which receptacles are more likely to contain it (already-searched receptacles are excluded), then decide your own action using that information together with the task.
+4. Whenever you feel stuck or uncertain about what to do next — for example, you cannot find an object, you keep getting "Nothing happened", or you are unsure of the current state — query the world model before acting. A query is free and never changes the environment, so use it to reorient yourself instead of guessing.

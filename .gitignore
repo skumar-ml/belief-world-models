@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+*.log
+
+outputs/
+logs/
+data/alfworld/
+env_libs/
+
+.DS_Store
+.idea/
+.vscode/

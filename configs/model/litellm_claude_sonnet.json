@@ -1,0 +1,10 @@
+{
+    "agent_class": "OpenAIAgent",
+    "config": {
+        "api_base": "${LITELLM_API_BASE}",
+        "api_key": "${LITELLM_API_KEY}",
+        "model_name": "aws/claude-sonnet-4-6",
+        "max_completion_tokens": 1024,
+        "temperature": 0.0
+    }
+}
