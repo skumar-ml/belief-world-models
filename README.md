@@ -13,17 +13,17 @@
     <sup>1</sup>Univeristy og Illinois Urbana=Champaign &nbsp;&nbsp;&nbsp; <sup>2</sup>IBM
     <br>
     </br>
-        <a href="#">
+        <!-- <a href="#">
         <img src='https://img.shields.io/badge/arXiv-BB--WM-green' alt='Paper PDF'>
-        </a>
-        <a href='#'>
-        <img src='https://img.shields.io/badge/Project_Page-BB--WM-blue' alt='Project Page'></a>
+        </a> -->
+        <!-- <a href='#'>
+        <img src='https://img.shields.io/badge/Project_Page-BB--WM-blue' alt='Project Page'></a> -->
         <!-- <a href='#'>
         <img src='https://img.shields.io/badge/YouTube-BB--WM-rgb(255, 0, 0)' alt='Youtube'></a> -->
      </br>
-    <table align="center">
+    <!-- <table align="center">
         <img src="./figures/teaser.gif">
-    </table>
+    </table> -->
 </p>
 
 Code for reproducing the main experiments in *Towards a Belief-Based World Model for LLM Agents* (BB-WM).
@@ -173,6 +173,6 @@ Models: `react_llama8b` (Llama-3.1-8B-Instruct), `qwen3_14b` (Qwen3-14B), `litel
 | `scripts/` | Data download + experiment runners |
 | `data/sciworld/` | Split indices and per-task step budgets |
 
-## License
+<!-- ## License
 
-Add your chosen license file before making this repository public.
+Add your chosen license file before making this repository public. -->
