@@ -24,3 +24,4 @@ core.*
 
 figures/
 scripts/slurm/
+wandb/
