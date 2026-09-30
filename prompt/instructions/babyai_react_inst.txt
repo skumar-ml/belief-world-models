@@ -1,0 +1,5 @@
+{task_instr}
+{react_instr}
+{action_list}
+
+{general_tips}

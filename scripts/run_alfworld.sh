@@ -12,6 +12,7 @@
 #   MAX_STEPS       env step budget (default: 30)
 #   RUN             run index for multi-seed studies (appends run<N> to output path)
 #   OVERRIDE        1=fresh run, 0=resume (default: 1)
+#   PLACEMENT       uniform (default) or zipf
 #   VLLM_ARGS       extra vLLM flags
 #   PORT            vLLM port (default: 8000)
 set -uo pipefail
@@ -24,6 +25,7 @@ SPLIT="${SPLIT:-test}"
 MAX_STEPS="${MAX_STEPS:-30}"
 OVERRIDE="${OVERRIDE:-1}"
 RUN="${RUN:-}"
+PLACEMENT="${PLACEMENT:-}"
 VLLM_ARGS="${VLLM_ARGS:-}"
 PORT="${PORT:-8000}"
 TAG="${METHOD}"
@@ -73,7 +75,10 @@ OVERRIDE_FLAG=""
 RUN_FLAG=""
 [ -n "$RUN" ] && RUN_FLAG="--run $RUN"
 
-echo "[$TAG] running eval (model=$MODEL, exp=$EXP_CONFIG, split=$SPLIT, run=${RUN:-flat})"
+PLACEMENT_FLAG=""
+[ -n "$PLACEMENT" ] && PLACEMENT_FLAG="--placement $PLACEMENT"
+
+echo "[$TAG] running eval (model=$MODEL, exp=$EXP_CONFIG, split=$SPLIT${PLACEMENT:+ placement=$PLACEMENT}, run=${RUN:-flat})"
 python eval_baselines.py \
     --method "$METHOD" \
     --exp_config "$EXP_CONFIG" \
@@ -82,6 +87,7 @@ python eval_baselines.py \
     --max_steps "$MAX_STEPS" \
     $OVERRIDE_FLAG \
     $RUN_FLAG \
+    $PLACEMENT_FLAG \
     --api_base "http://localhost:$PORT/v1" \
     --api_key EMPTY
 RC=$?

@@ -9,8 +9,18 @@ venv/
 outputs/
 logs/
 data/alfworld/
+# Generated Zipf placement cache. Original games stay under data/alfworld/.
+data/alfworld_zipf/
 env_libs/
+checkpoints/
+
+# Linux core dumps (cwd = repo root; can be 10GB+).
+core
+core.*
 
 .DS_Store
 .idea/
 .vscode/
+
+figures/
+scripts/slurm/

@@ -1,0 +1,7 @@
+{task_instr}
+{react_instr}
+{action_list}
+{walle_wm_instr}
+
+{general_tips}
+{wm_tips}

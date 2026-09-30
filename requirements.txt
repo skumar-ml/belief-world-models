@@ -4,6 +4,8 @@ backoff==2.2.1
 colorama==0.4.6
 fastapi==0.115.2
 gym==0.24.0
+gymnasium>=0.29.1,<1.0
+minigrid @ git+https://github.com/BartekCupial/Minigrid.git@cf73dd148e51276bd675a37e3bfb0bf2b42329b2
 httpx==0.27.2
 numpy==1.26.4
 openai==2.43.0

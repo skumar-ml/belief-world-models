@@ -2,9 +2,14 @@
 
 The WM env (envs/wm_alfworld_env.py) delegates query handling here; tests import the
 same function, so there is a single source of truth for the query grammar + responses.
+`format_push` is the always-on counterpart: location, inventory, and where-is on the
+goal target, appended after real observations when `push_mode` is `"belief"`.
 
 Supported queries (case-insensitive, text after the `query` keyword):
-  - "where is <object_type>"                 -> ranked non-searched receptacles
+  - "where is <object_type>"                 -> non-searched receptacles
+                                                (ranked with probabilities, or a
+                                                random list when
+                                                belief.report_probabilities is False)
   - "where is <object_type> <n>"             -> that specific instance's location only
                                                 (or held / not-yet-located)
   - "what is in <receptacle>" / "what's in …" -> observed contents, or not-searched
@@ -14,6 +19,7 @@ Supported queries (case-insensitive, text after the `query` keyword):
 Design contract: wiki/syntheses/m3-stage1-spec.md.
 """
 
+import random
 import re
 from typing import List, Tuple
 
@@ -60,13 +66,43 @@ def state_dump(belief: BeliefState) -> str:
 
 
 def state_dump_internal(belief: BeliefState) -> str:
-    """Internal-state-only push: just the agent's location and inventory.
-
-    External state (objects seen, searched receptacles, where-is) stays query-able.
-    """
+    """Location and inventory — the query-state facts used by the always-on push."""
     loc = belief.agent_location or "unknown"
     inv = ", ".join(sorted(belief.inventory)) or "nothing"
     return f"You are at {loc}, holding {inv}."
+
+
+def _format_unordered(names: List[str]) -> str:
+    """Shuffle a candidate list so its order is not a ranking."""
+    ordered = list(names)
+    random.shuffle(ordered)
+    return ", ".join(ordered)
+
+
+def where_is_sentence(belief: BeliefState, obj_type: str) -> str:
+    """Type-level where-is answer; shared by `query where is` and the always-on push."""
+    ranking = belief.where_is(obj_type)
+    if not ranking:
+        # Deterministic-only WM: nothing observed yet (no prior to fall back on).
+        if not getattr(belief, "track_belief", True):
+            return f"{obj_type} has not been observed yet. Search receptacles to find it."
+        return f"No candidate locations remain for {obj_type} (all likely receptacles searched)."
+    # Deterministic-only WM reports known locations, not a probability estimate.
+    if not getattr(belief, "track_belief", True):
+        return f"{obj_type} has been observed at: {', '.join(r for r, _ in ranking)}."
+    # Same candidate set as the probabilistic answer (non-searched, non-zero mass),
+    # listed in full and in random order, with no probabilities.
+    if not getattr(belief, "report_probabilities", True):
+        return f"{obj_type} may be at: {_format_unordered([r for r, _ in ranking])}."
+    return f"{obj_type} is most likely at: {_format_ranking(ranking)}."
+
+
+def format_push(belief: BeliefState) -> str:
+    """Always-on push: location, inventory, and where-is for the goal target.
+
+    Same sentences as `query state` (loc/inv) plus `query where is <target>`.
+    """
+    return f"{state_dump_internal(belief)} {where_is_sentence(belief, belief.goal.target_type)}"
 
 
 def answer_query(belief: BeliefState, query: str) -> str:
@@ -94,16 +130,7 @@ def answer_query(belief: BeliefState, query: str) -> str:
             return f"{obj_id} has not been located yet."
 
         # Type-level query: rank likely receptacles from the belief distribution.
-        ranking = belief.where_is(obj_type)
-        if not ranking:
-            # Deterministic-only WM: nothing observed yet (no prior to fall back on).
-            if not getattr(belief, "track_belief", True):
-                return f"{obj_type} has not been observed yet. Search receptacles to find it."
-            return f"No candidate locations remain for {obj_type} (all likely receptacles searched)."
-        # Deterministic-only WM reports known locations, not a probability estimate.
-        if not getattr(belief, "track_belief", True):
-            return f"{obj_type} has been observed at: {', '.join(r for r, _ in ranking)}."
-        return f"{obj_type} is most likely at: {_format_ranking(ranking)}."
+        return where_is_sentence(belief, obj_type)
 
     m = re.match(r"what(?:'s| is| are)?\s+in\s+(?:the )?(.+)", ql)
     if m:

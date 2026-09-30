@@ -1,29 +1,16 @@
 """The alfworld environment object"""
 
-import re
-import json
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Tuple
 
 from envs import BaseEnv
+from envs.alfworld_parse import NOOP_MARKER, parse_action as parse_alfworld_action, process_ob
 from tasks import AlfWorldTask
 from prompt import prompt_with_icl
 from utils.datatypes import State
 
 
 logger = logging.getLogger("agent_eval")
-
-
-# Substring the underlying ALFWorld env returns when a parseable action is
-# invalid / a no-op. Repeated occurrences signal the agent is stuck in a loop.
-_NOOP_MARKER = "Nothing happens"
-
-
-# Strip the "You arrive at loc ..." prefix the env prepends after a goto.
-def process_ob(ob):
-    if ob.startswith('You arrive at loc '):
-        ob = ob[ob.find('. ')+2:]
-    return ob
 
 
 class AlfWorldEnv(BaseEnv):
@@ -46,16 +33,7 @@ class AlfWorldEnv(BaseEnv):
         self._mpo_workflow = kwargs.get("mpo_workflow", False)
 
     def parse_action(self, llm_output: str) -> str:
-        # Extract the text after "Action:" from the ReAct output.
-        llm_output = llm_output.strip()
-        pattern = re.compile(r"Action:\s?(.*)", re.DOTALL)
-        action = re.findall(pattern, llm_output)[0]
-        # Normalize "put X in/on Y" to the exact form the env expects.
-        put_action = re.findall(r"put\s+(.*)\s+[io]n\s+(.*)", action)
-        if put_action:
-            action = f"put {put_action[0][0]} in/on {put_action[0][1]}"
-        assert action is not None
-        return action
+        return parse_alfworld_action(llm_output)
     
     def conduct_action(self, action: str):
         # Step the underlying (batched) env and unwrap the single result.
@@ -123,7 +101,7 @@ class AlfWorldEnv(BaseEnv):
         # The action parsed and executed, so reset the consecutive parse-failure streak.
         self.bad_steps = 0
         # Track consecutive no-ops ("Nothing happens"); reset on any productive step.
-        if _NOOP_MARKER in observation:
+        if NOOP_MARKER in observation:
             self.noop_steps += 1
         else:
             self.noop_steps = 0

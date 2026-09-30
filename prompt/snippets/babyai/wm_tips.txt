@@ -1,0 +1,2 @@
+- The world model only provides information; it does not tell you what to do.
+- Whenever you feel stuck or uncertain about what to do next — for example, you cannot find an object or you are unsure of the current state — query the world model before acting. A query is free and never changes the environment, so use it to reorient yourself instead of guessing.

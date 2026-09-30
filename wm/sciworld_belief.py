@@ -68,8 +68,12 @@ class SciWorldBeliefState:
     """The location world model for one SciWorld episode."""
 
     def __init__(self, goal: SciWorldGoal, rooms: Optional[List[str]] = None,
-                 stated_locations: Optional[Dict[str, str]] = None):
+                 stated_locations: Optional[Dict[str, str]] = None,
+                 track_belief: bool = True):
         self.goal = goal
+        # Ablation switch: when False, drop room priors / stated-location mass and
+        # answer where-is from observed facts only (inventory, seen rooms/containers).
+        self.track_belief = track_belief
         self.rooms: Dict[str, Room] = {r: Room(name=r) for r in (rooms or scene.ROOMS)}
         self.stated_locations: Dict[str, str] = {
             k.strip().lower(): v.strip().lower()
@@ -83,15 +87,15 @@ class SciWorldBeliefState:
         self.held_contents: Dict[str, Optional[Set[str]]] = {}
         self._last_dump_inline: Dict[str, Set[str]] = {}
         self._seen_containers: Set[str] = set()
-        self.beliefs: Dict[str, RoomBelief] = {
-            goal.target_type: RoomBelief(
+        self.beliefs: Dict[str, RoomBelief] = {}
+        if track_belief:
+            self.beliefs[goal.target_type] = RoomBelief(
                 goal.target_type, list(self.rooms), forced_room=goal.named_location
             )
-        }
-        for obj, room in self.stated_locations.items():
-            if obj == goal.target_type.strip().lower():
-                continue
-            self.beliefs[obj] = RoomBelief(obj, list(self.rooms), stated_room=room)
+            for obj, room in self.stated_locations.items():
+                if obj == goal.target_type.strip().lower():
+                    continue
+                self.beliefs[obj] = RoomBelief(obj, list(self.rooms), stated_room=room)
 
     @property
     def target_belief(self) -> RoomBelief:
@@ -217,10 +221,26 @@ class SciWorldBeliefState:
     def _searched_rooms(self) -> Set[str]:
         return {r for r, rm in self.rooms.items() if rm.searched}
 
+    def observed_locations(self, object_type: str) -> List[str]:
+        """Rooms where this type has actually been seen (not inventory, not prior)."""
+        key = object_type.strip().lower()
+        seen: List[str] = []
+        loc = self.container_of(key)
+        if loc:
+            seen.append(loc[0])
+        for rname, rm in self.rooms.items():
+            if not rm.searched:
+                continue
+            if any(self._referent_matches(o, key) for o in rm.contents):
+                seen.append(rname)
+        return list(dict.fromkeys(seen))
+
     def where_is(self, object_type: str) -> List[Tuple[str, float]]:
         key = object_type.strip().lower()
         if any(self._referent_matches(held, key) for held in self.inventory):
             return [("inventory", 1.0)]
+        if not self.track_belief:
+            return [(r, 1.0) for r in self.observed_locations(object_type)]
         b = self._get_belief(object_type)
         if b.located_at is not None:
             return [(b.located_at, 1.0)]
@@ -231,6 +251,10 @@ class SciWorldBeliefState:
 
     def has_information(self, object_type: str) -> bool:
         key = object_type.strip().lower()
+        if not self.track_belief:
+            if any(self._referent_matches(held, key) for held in self.inventory):
+                return True
+            return bool(self.observed_locations(key))
         if any(self._referent_matches(stated, key) for stated in self.stated_locations):
             return True
         if any(self._referent_matches(held, key) for held in self.inventory):

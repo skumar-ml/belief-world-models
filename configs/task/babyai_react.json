@@ -1,0 +1,17 @@
+{
+    "benchmark": "babyai",
+    "agent": "react",
+    "permutation": "original",
+    "task": {
+        "task_class": "BabyAITask",
+        "filepath": "data/babyai"
+    },
+    "env_config": {
+        "env_class": "BabyAIEnv",
+        "instruction_path": "prompt/instructions/babyai_react_inst.txt",
+        "max_steps": 64,
+        "num_dists": 0,
+        "prompt_max_obs": 16,
+        "prompt_compact_walle": false
+    }
+}

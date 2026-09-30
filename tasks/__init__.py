@@ -5,6 +5,7 @@ from .base import Task
 _LAZY = {
     "AlfWorldTask": ".alfworld",
     "SciWorldTask": ".sciworld",
+    "BabyAITask": ".babyai",
 }
 
 

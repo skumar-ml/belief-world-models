@@ -1,0 +1,18 @@
+{
+    "benchmark": "sciworld",
+    "agent": "react",
+    "permutation": "wm_det",
+    "task": {
+        "task_class": "SciWorldTask",
+        "filepath": ""
+    },
+    "env_config": {
+        "env_class": "DeterministicWMSciWorldEnv",
+        "push_mode": "none",
+        "instruction_path": "prompt/instructions/sciworld_react_wm_det_inst.txt",
+        "icl_path": "prompt/icl_examples/sciworld_react_pertask_icl.json",
+        "icl_format": "first",
+        "max_steps": 100,
+        "simplification": "noElectricalAction,openDoors,selfWateringFlowerPots,teleportAction,openContainers"
+    }
+}

@@ -8,7 +8,8 @@
 # Optional:
 #   AGENT_CONFIG  default litellm_claude_sonnet
 #   SPLIT         default test
-#   MAX_STEPS     default 30 (ALFWorld); omit for SciWorld per-task budgets
+#   MAX_STEPS     default 30 (ALFWorld) / 64 (BabyAI); omit for SciWorld
+#   FAMILIES      BabyAI families; use + (default omits open/door)
 #   RUN           run index
 #   OVERRIDE      default 1
 #
@@ -20,9 +21,9 @@ METHOD="${METHOD:?set METHOD}"
 EXP_CONFIG="${EXP_CONFIG:?set EXP_CONFIG}"
 AGENT_CONFIG="${AGENT_CONFIG:-litellm_claude_sonnet}"
 SPLIT="${SPLIT:-test}"
-MAX_STEPS="${MAX_STEPS:-30}"
 OVERRIDE="${OVERRIDE:-1}"
 RUN="${RUN:-}"
+FAMILIES="${FAMILIES:-}"
 
 if [ -f "$HOME/.litellm_env" ]; then
     # shellcheck source=/dev/null
@@ -44,16 +45,27 @@ RUN_FLAG=""
 
 MAX_STEPS_FLAG=""
 if [[ "$EXP_CONFIG" == alfworld* ]]; then
+    MAX_STEPS="${MAX_STEPS:-30}"
+    MAX_STEPS_FLAG="--max_steps $MAX_STEPS"
+elif [[ "$EXP_CONFIG" == babyai* ]]; then
+    MAX_STEPS="${MAX_STEPS:-64}"
     MAX_STEPS_FLAG="--max_steps $MAX_STEPS"
 fi
 
-echo "[run-api] method=$METHOD exp=$EXP_CONFIG agent=$AGENT_CONFIG split=$SPLIT"
+FAMILIES_FLAG=""
+if [[ "$EXP_CONFIG" == babyai* ]]; then
+    FAMILIES="${FAMILIES:-goto+pickup+putnext+pick_up_seq_go_to}"
+    FAMILIES_FLAG="--families ${FAMILIES}"
+fi
+
+echo "[run-api] method=$METHOD exp=$EXP_CONFIG agent=$AGENT_CONFIG split=$SPLIT${FAMILIES:+ families=$FAMILIES}"
 python eval_baselines.py \
     --method "$METHOD" \
     --exp_config "$EXP_CONFIG" \
     --agent_config "$AGENT_CONFIG" \
     --split "$SPLIT" \
     $MAX_STEPS_FLAG \
+    $FAMILIES_FLAG \
     $OVERRIDE_FLAG \
     $RUN_FLAG
 exit $?

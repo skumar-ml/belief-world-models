@@ -15,9 +15,19 @@ so we key the prior on the lowercased type.
 See wiki/syntheses/m3-stage1-spec.md for the design contract.
 """
 
+import json
+import os
+import random
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, List, Set
+from typing import Dict, Iterable, List, Optional, Set
+
+# One shuffle of allowed receptacle types per object type, shared by every game.
+# Rank 1 is index 0. Weights are k^{-ZIPF_ALPHA}. Regenerating this file must
+# use ZIPF_RANK_SEED so the sampler and the belief prior stay tied together.
+ZIPF_ALPHA = 1.25
+ZIPF_RANK_SEED = 20260923
+_RANK_PATH = os.path.join(os.path.dirname(__file__), "zipf_ranks.json")
 
 
 @lru_cache(maxsize=1)
@@ -88,3 +98,107 @@ def uniform_prior(
 
     p = 1.0 / len(candidates)
     return {r: (p if r in candidates else 0.0) for r in present_receptacles}
+
+
+def build_zipf_ranks(seed: int = ZIPF_RANK_SEED) -> Dict[str, List[str]]:
+    """Shuffle each object type's allowed receptacle types once.
+
+    Object types are visited in sorted order with a single RNG, so the whole
+    table is determined by `seed`. Rank 1 is the first entry of each list.
+    """
+    mapping = _object_to_receptacle_types()
+    rng = random.Random(seed)
+    ranks: Dict[str, List[str]] = {}
+    for obj in sorted(mapping):
+        types = sorted(mapping[obj])
+        rng.shuffle(types)
+        ranks[obj] = types
+    return ranks
+
+
+def save_zipf_ranks(path: str = _RANK_PATH, seed: int = ZIPF_RANK_SEED) -> Dict[str, List[str]]:
+    ranks = build_zipf_ranks(seed)
+    payload = {"alpha": ZIPF_ALPHA, "seed": seed, "ranks": ranks}
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2)
+        f.write("\n")
+    _load_zipf_ranks.cache_clear()
+    return ranks
+
+
+@lru_cache(maxsize=1)
+def _load_zipf_ranks() -> Dict[str, List[str]]:
+    with open(_RANK_PATH) as f:
+        payload = json.load(f)
+    if payload.get("alpha") != ZIPF_ALPHA:
+        raise ValueError(
+            f"{_RANK_PATH} has alpha={payload.get('alpha')}, expected {ZIPF_ALPHA}"
+        )
+    return {obj: list(types) for obj, types in payload["ranks"].items()}
+
+
+def zipf_rank(object_type: str) -> List[str]:
+    """Allowed receptacle types for this object, best rank first. Shared by every game."""
+    return list(_load_zipf_ranks().get(object_type.lower(), []))
+
+
+def zipf_type_weights(
+    object_type: str,
+    present_types: Iterable[str],
+    exclude_types: Optional[Iterable[str]] = None,
+    alpha: float = ZIPF_ALPHA,
+) -> Dict[str, float]:
+    """Zipf mass over receptacle types that are present and not excluded.
+
+    Types missing from the scene, and `exclude_types` (the goal receptacle
+    type), are dropped and the remaining weights renormalized. An empty dict
+    means this scene has no Zipf support left.
+    """
+    present = {t.lower() for t in present_types}
+    exclude = {t.lower() for t in (exclude_types or []) if t}
+    weighted = []
+    for rank, recep_type in enumerate(zipf_rank(object_type), start=1):
+        if recep_type in exclude or recep_type not in present:
+            continue
+        weighted.append((recep_type, rank ** (-alpha)))
+    if not weighted:
+        return {}
+    total = sum(w for _, w in weighted)
+    return {recep_type: w / total for recep_type, w in weighted}
+
+
+def zipf_prior(
+    object_type: str,
+    present_receptacles: List[str],
+    exclude_types: Optional[Iterable[str]] = None,
+) -> Dict[str, float]:
+    """Instance prior: type-level Zipf, split uniformly across instances of that type.
+
+    Receptacles whose type gets no mass (absent, excluded, or not allowed) are
+    present in the dict with probability 0. Falls back to a uniform distribution
+    over the non-excluded receptacles when the object type has no Zipf ranks
+    or every ranked type was dropped, so the belief is never empty.
+    """
+    if not present_receptacles:
+        return {}
+
+    by_type: Dict[str, List[str]] = defaultdict(list)
+    for recep in present_receptacles:
+        by_type[receptacle_type(recep)].append(recep)
+
+    weights = zipf_type_weights(object_type, by_type.keys(), exclude_types)
+    if not weights:
+        exclude = {t.lower() for t in (exclude_types or []) if t}
+        candidates = [r for r in present_receptacles if receptacle_type(r) not in exclude]
+        if not candidates:
+            candidates = list(present_receptacles)
+        p = 1.0 / len(candidates)
+        return {r: (p if r in set(candidates) else 0.0) for r in present_receptacles}
+
+    dist = {r: 0.0 for r in present_receptacles}
+    for recep_type, mass in weights.items():
+        instances = by_type[recep_type]
+        share = mass / len(instances)
+        for inst in instances:
+            dist[inst] = share
+    return dist

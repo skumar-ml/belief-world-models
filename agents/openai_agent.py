@@ -10,6 +10,34 @@ from .base import BaseAgent
 logger = logging.getLogger("agent_eval")
 
 
+def _reasoning_stats(response) -> dict:
+    """Pull OpenRouter thinking diagnostics off a chat completion."""
+    choice = response.choices[0]
+    message = choice.message
+    reasoning = getattr(message, "reasoning", None)
+    if reasoning is None:
+        reasoning = getattr(message, "reasoning_content", None)
+    details = getattr(message, "reasoning_details", None)
+    usage = getattr(response, "usage", None)
+    completion_tokens = None
+    reasoning_tokens = None
+    if usage is not None:
+        completion_tokens = getattr(usage, "completion_tokens", None)
+        token_details = getattr(usage, "completion_tokens_details", None)
+        if token_details is not None:
+            reasoning_tokens = getattr(token_details, "reasoning_tokens", None)
+    reasoning_len = len(reasoning) if isinstance(reasoning, str) else 0
+    return {
+        "finish_reason": choice.finish_reason,
+        "completion_tokens": completion_tokens,
+        "reasoning_tokens": reasoning_tokens,
+        "has_reasoning": bool(reasoning),
+        "reasoning_len": reasoning_len,
+        "has_reasoning_details": bool(details),
+        "content_is_none": message.content is None,
+    }
+
+
 class OpenAIAgent(BaseAgent):
     def __init__(self, config):
         super().__init__(config)
@@ -53,13 +81,42 @@ class OpenAIAgent(BaseAgent):
         # chat_template_kwargs={"enable_thinking": false} to disable Qwen3 thinking).
         # Omitted from the request entirely when unset, so non-Qwen runs are unchanged.
         extra_body = self.config.get("extra_body", None)
-        # Prepend the prompt with the system message
-        response = self.client.chat.completions.create(
-            model=self.config["model_name"],
-            messages=messages,
-            max_completion_tokens=self.config.get("max_completion_tokens", 512),
-            temperature=self.config.get("temperature", 0),
-            stop=self.stop_words,
-            **({"extra_body": extra_body} if extra_body else {}),
-        )
-        return response.choices[0].message.content
+        # OpenRouter Qwen3 can return message.content=None even with thinking
+        # disabled; retry a few times rather than crashing env.step on None.
+        content = None
+        for attempt in range(3):
+            response = self.client.chat.completions.create(
+                model=self.config["model_name"],
+                messages=messages,
+                max_completion_tokens=self.config.get("max_completion_tokens", 512),
+                temperature=self.config.get("temperature", 0),
+                stop=self.stop_words,
+                **({"extra_body": extra_body} if extra_body else {}),
+            )
+            stats = _reasoning_stats(response)
+            logger.info(
+                "completion_stats model=%s attempt=%s finish=%s "
+                "completion_tokens=%s reasoning_tokens=%s has_reasoning=%s "
+                "reasoning_len=%s has_reasoning_details=%s content_is_none=%s",
+                self.config["model_name"],
+                attempt + 1,
+                stats["finish_reason"],
+                stats["completion_tokens"],
+                stats["reasoning_tokens"],
+                stats["has_reasoning"],
+                stats["reasoning_len"],
+                stats["has_reasoning_details"],
+                stats["content_is_none"],
+            )
+            content = response.choices[0].message.content
+            if content is not None and str(content).strip():
+                return content
+            logger.warning(
+                "empty completion from %s (finish_reason=%s, attempt=%s, "
+                "reasoning_tokens=%s)",
+                self.config["model_name"],
+                stats["finish_reason"],
+                attempt + 1,
+                stats["reasoning_tokens"],
+            )
+        return content or ""

@@ -1,0 +1,21 @@
+Interact with a household to solve a task. Imagine you are an intelligent agent in a household environment and your target is to perform actions to complete the task goal. At the beginning of your interactions, you will be given the detailed description of the current environment and your goal to accomplish.
+For each of your turn, you will be given the observation of the last turn. You should first reflect in one sentence on the agent's state in relation to the task goal, and then output the action for this turn. Your output must strictly follow this format:"Reflection: your reflection.\n Action: your next action".
+The available actions are:
+1. go to {recep}
+2. take {obj} from {recep}
+3. put {obj} in/on {recep}
+4. open {recep}
+5. close {recep}
+6. use {obj}
+7. clean {obj} with {recep}
+8. heat {obj} with {recep}
+9. cool {obj} with {recep}
+where {obj} and {recep} correspond to objects and receptacles.
+After your each turn, the environment will give you immediate feedback based on which you plan your next few steps. if the envrionment output "Nothing happened", that means the previous action is invalid and you should try more options.
+You are assisted by a world model that tracks the environment state and where objects are likely to be. After the initial task, after every environment observation, and after any rejected action, it appends a line beginning with "[World model]" that reports where you are, what you are holding, and where the task object is most likely to be (already-searched receptacles are excluded). You cannot query the world model; this summary is always provided automatically.
+The same world model checks each action you propose before it is executed. If the action is infeasible in the current state, it will not execute it; instead it returns an observation beginning with "[World model]" that explains why the action would fail and suggests how to fix it. This check does not change the environment and does not consume a step. When you receive such an observation, do not repeat the same action — read the reason and the latest state summary, address it (for example by first moving to the right location or freeing your hand), and propose a different action.
+Reminder:
+1. The action must be chosen from the given available actions. Any actions except provided available actions will be regarded as illegal.
+2. You should reflect on the current state in relation to the task goal every turn before acting.
+3. The world model only provides information; it does not tell you what to do. When searching for an object, use the "[World model]" ranking together with the task to decide which receptacle to check next.
+4. Whenever you feel stuck or uncertain about what to do next — for example, you cannot find an object, you keep getting "Nothing happened", an action was rejected, or you are unsure of the current state — read the latest "[World model]" lines before acting. If a check rejected your action, do not repeat it.

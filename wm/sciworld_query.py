@@ -5,10 +5,14 @@ Supported queries (case-insensitive, text after the `query` keyword):
   - "what is in <room>"              -> observed contents of a searched room
   - "have i searched <room>"         -> searched flag
   - "state" / "status"               -> compact structured dump
+
+`format_push` is the always-on counterpart: location, inventory, focus, and
+where-is on the goal target plus any objects seeded from the task description
+(`stated_locations`), appended as one `[World model]` line.
 """
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from wm.sciworld_belief import SciWorldBeliefState
 
@@ -72,6 +76,73 @@ def state_dump(belief: SciWorldBeliefState) -> str:
             f"Rooms searched: {', '.join(searched) or 'none'}.")
 
 
+def state_dump_internal(belief: SciWorldBeliefState) -> str:
+    """Location, inventory, focus — the always-on push facts (no searched list)."""
+    loc = belief.agent_location or "unknown"
+    inv = _fmt_inventory(belief)
+    focus = belief.focus or "nothing"
+    return f"You are in the {loc}, holding {inv}, focused on {focus}."
+
+
+def where_is_sentence(belief: SciWorldBeliefState, obj_type: str) -> Optional[str]:
+    """One where-is clause; None if the referent is a room or unknown."""
+    obj_type = obj_type.strip().lower()
+    if not obj_type or belief.is_room(obj_type):
+        return None
+    loc = belief.container_of(obj_type)
+    if loc:
+        room, container = loc
+        return f"{obj_type} is in the {room}, in the {container}."
+    ranking = belief.where_is(obj_type)
+    if ranking == [("inventory", 1.0)]:
+        return f"{obj_type} is in inventory."
+    if not getattr(belief, "track_belief", True):
+        if not ranking:
+            return f"{obj_type} has not been observed yet. Search rooms to find it."
+        return f"{obj_type} has been observed in the {', '.join(r for r, _ in ranking)}."
+    if not ranking:
+        if not belief.has_information(obj_type):
+            return None
+        return f"No candidate rooms remain for {obj_type} (all likely rooms searched)."
+    if len(ranking) == 1 and ranking[0][1] >= 1.0 - 1e-9:
+        return f"{obj_type} is in the {ranking[0][0]}."
+    return f"{obj_type} is most likely in: {_format_ranking(ranking)}."
+
+
+# Destination nouns the task description places in a room ("the boxes are located
+# around the kitchen") but that are not search targets for the push line.
+_PUSH_SKIP_HEADS = {"box", "boxes"}
+
+
+def _push_referents(belief: SciWorldBeliefState) -> List[str]:
+    """Goal target first, then stated-location objects (thermometer, seeds, …)."""
+    seen: List[str] = []
+
+    def _add(name: str) -> None:
+        key = (name or "").strip().lower()
+        if not key or key in seen:
+            return
+        head = key.split()[-1]
+        if head in _PUSH_SKIP_HEADS:
+            return
+        seen.append(key)
+
+    _add(getattr(belief.goal, "target_type", ""))
+    for obj in sorted(belief.stated_locations):
+        _add(obj)
+    return seen
+
+
+def format_push(belief: SciWorldBeliefState) -> str:
+    """Always-on push: state plus where-is for the target and stated objects."""
+    parts = [state_dump_internal(belief)]
+    for obj in _push_referents(belief):
+        sent = where_is_sentence(belief, obj)
+        if sent:
+            parts.append(sent)
+    return " ".join(parts)
+
+
 def answer_query(belief: SciWorldBeliefState, query: str) -> str:
     ql = query.lower().strip()
 
@@ -85,6 +156,13 @@ def answer_query(belief: SciWorldBeliefState, query: str) -> str:
         if loc:
             room, container = loc
             return f"{obj_type} is in the {room}, in the {container}."
+        if not getattr(belief, "track_belief", True):
+            ranking = belief.where_is(obj_type)
+            if ranking == [("inventory", 1.0)]:
+                return f"{obj_type} is in inventory."
+            if not ranking:
+                return f"{obj_type} has not been observed yet. Search rooms to find it."
+            return f"{obj_type} has been observed in the {', '.join(r for r, _ in ranking)}."
         if not belief.has_information(obj_type):
             return "The world model cannot help you with this query."
         ranking = belief.where_is(obj_type)

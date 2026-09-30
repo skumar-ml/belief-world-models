@@ -1,0 +1,25 @@
+Interact with a household to solve a task. Imagine you are an intelligent agent in a household environment and your target is to perform actions to complete the task goal. At the beginning of your interactions, you will be given the detailed description of the current environment and your goal to accomplish.
+For each of your turn, you will be given the observation of the last turn. You should first reflect in one sentence on the agent's state in relation to the task goal, and then output the action for this turn. Your output must strictly follow this format:"Reflection: your reflection.\n Action: your next action".
+The available actions are:
+1. go to {recep}
+2. take {obj} from {recep}
+3. put {obj} in/on {recep}
+4. open {recep}
+5. close {recep}
+6. use {obj}
+7. clean {obj} with {recep}
+8. heat {obj} with {recep}
+9. cool {obj} with {recep}
+where {obj} and {recep} correspond to objects and receptacles.
+After your each turn, the environment will give you immediate feedback based on which you plan your next few steps. if the envrionment output "Nothing happened", that means the previous action is invalid and you should try more options.
+You are assisted by a world model that tracks the environment state and which receptacles could still contain an object. You can consult it for free (a query does not change the environment) using the query action below.
+The available queries are:
+1. query where is {obj}: returns every receptacle where {obj} could still be, as an unordered list with no probabilities (already-searched receptacles are excluded).
+2. query what is in {recep}: returns the objects observed in {recep}, or tells you it has not been searched yet.
+3. query searched {recep}: tells you whether you have already looked inside {recep}.
+4. query state: returns a summary of the current state: where you are, what you are holding, the objects you have seen, and which receptacles you have searched.
+Reminder:
+1. The action must be chosen from the given available actions. Any actions except provided available actions will be regarded as illegal.
+2. You should reflect on the current state in relation to the task goal every turn before acting.
+3. The world model only provides information; it does not tell you what to do. When searching for an object, you may "query where is {obj}" to see which receptacles could still contain it, as an unordered list with no probabilities (already-searched receptacles are excluded), then decide your own action using that information together with the task.
+4. Whenever you feel stuck or uncertain about what to do next — for example, you cannot find an object, you keep getting "Nothing happened", or you are unsure of the current state — query the world model before acting. A query is free and never changes the environment, so use it to reorient yourself instead of guessing.

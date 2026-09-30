@@ -61,10 +61,13 @@ class WalleOracleSciWorldEnv(SciWorldEnv):
             f"[World model] The action '{action_str}' is not possible in the current "
             f"state (the parser does not recognize it here). Choose a different action."
         )
-        self.state.history.append({"role": "user", "content": f"Observation: {answer}"})
+        observation = f"Observation: {answer}"
+        if getattr(self, "_push_enabled", lambda: False)() and getattr(self, "belief", None) is not None:
+            observation = self._with_push(observation)
+        self.state.history.append({"role": "user", "content": observation})
         self.state.walle_rejections += 1
         self._consecutive_rejections += 1
-        return f"Observation: {answer}", self.state
+        return observation, self.state
 
     def step(self, llm_output: str) -> Tuple[str, State]:
         # Malformed output (no "Action:"): defer to the parent's format-error path.

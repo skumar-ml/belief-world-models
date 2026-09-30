@@ -1,0 +1,4 @@
+Tips:
+- Once the desired object you want to interact or pickup is in front of you, you can use the 'toggle' action to interact with it (or 'pick up' to take it).
+- It doesn't make sense to repeat the same action over and over if the observation doesn't change.
+- Any action except the six listed above (and the query actions, if provided) is illegal and will not change the environment.

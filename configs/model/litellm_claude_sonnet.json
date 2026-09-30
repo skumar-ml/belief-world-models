@@ -4,7 +4,11 @@
         "api_base": "${LITELLM_API_BASE}",
         "api_key": "${LITELLM_API_KEY}",
         "model_name": "aws/claude-sonnet-4-6",
+        "model_tag": "claude-sonnet-4-6",
         "max_completion_tokens": 1024,
-        "temperature": 0.0
+        "temperature": 0.0,
+        "extra_body": {
+            "thinking": {"type": "disabled"}
+        }
     }
 }

@@ -1,0 +1,7 @@
+{task_instr}
+{reflact_instr}
+{action_list}
+{walle_instr}
+
+{general_tips}
+{walle_tips}

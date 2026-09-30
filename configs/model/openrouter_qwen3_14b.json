@@ -1,0 +1,20 @@
+{
+    "agent_class": "OpenAIAgent",
+    "config": {
+        "api_base": "https://openrouter.ai/api/v1",
+        "api_key": "${OPENROUTER_API_KEY}",
+        "model_name": "qwen/qwen3-14b",
+        "model_tag": "Qwen3-14B",
+        "max_completion_tokens": 512,
+        "temperature": 0.0,
+        "extra_body": {
+            "reasoning": {"enabled": false, "effort": "none"},
+            "enable_thinking": false,
+            "provider": {
+                "order": ["alibaba"],
+                "allow_fallbacks": false,
+                "require_parameters": true
+            }
+        }
+    }
+}

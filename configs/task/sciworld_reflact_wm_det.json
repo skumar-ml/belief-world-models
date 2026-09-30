@@ -1,0 +1,18 @@
+{
+    "benchmark": "sciworld",
+    "agent": "reflact",
+    "permutation": "wm_det",
+    "task": {
+        "task_class": "SciWorldTask",
+        "filepath": ""
+    },
+    "env_config": {
+        "env_class": "DeterministicWMSciWorldEnv",
+        "push_mode": "none",
+        "instruction_path": "prompt/instructions/sciworld_reflact_wm_det_inst.txt",
+        "icl_path": "prompt/icl_examples/sciworld_reflact_pertask_icl.json",
+        "icl_format": "first",
+        "max_steps": 100,
+        "simplification": "noElectricalAction,openDoors,selfWateringFlowerPots,teleportAction,openContainers"
+    }
+}

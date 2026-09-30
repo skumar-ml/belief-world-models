@@ -1,0 +1,1 @@
+You are an agent playing a simple navigation game. You are in a partially observable grid environment. You can only observe objects in your current field of view.

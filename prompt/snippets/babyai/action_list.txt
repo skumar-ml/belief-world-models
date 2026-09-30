@@ -1,0 +1,7 @@
+The following are the possible actions you can take in the game, followed by a short description of each action:
+turn left: turn to the left,
+turn right: turn to the right,
+go forward: take one step forward,
+pick up: pick up the object directly in front of you,
+drop: drop the object that you are holding,
+toggle: manipulate the object in front of you.

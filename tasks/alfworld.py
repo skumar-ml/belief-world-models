@@ -4,8 +4,7 @@ import yaml
 import logging
 from typing import Iterable, Tuple
 
-import alfworld
-import alfworld.agents.environment as envs
+from alfworld.agents.environment.alfred_tw_env import AlfredTWEnv
 
 from tasks.base import Task
 
@@ -30,7 +29,7 @@ class AlfWorldTask(Task):
     def __init__(
         self,
         task_name: str,
-        env: envs.AlfredTWEnv,
+        env: AlfredTWEnv,
         task_type: str,
         obs: str,
         workflow: str = None,
@@ -54,12 +53,21 @@ class AlfWorldTask(Task):
         split: str = "test",
         part_num: int = 1,
         part_idx: int = -1,
+        placement: str = "uniform",
     ) -> Tuple[Iterable[Task], int]:
         """Load alfworld data and prompts from a directory.
 
         workflow_path (MPO): jsonl of {"task": <obs>, "workflow": <str>}. When given,
         each task is tagged with its meta-plan keyed by the reset observation.
+
+        placement: ``uniform`` reads the released games. ``zipf`` resamples the
+        goal object into a sibling cache and points ALFWORLD_DATA at that cache.
         """
+        if placement not in ("uniform", "zipf"):
+            raise ValueError(f"placement must be 'uniform' or 'zipf', got {placement!r}")
+        if placement == "zipf":
+            from tasks.alfworld_zipf import ensure_zipf_cache
+            path = ensure_zipf_cache(path, split)
         os.environ["ALFWORLD_DATA"] = path
 
         with open(os.path.join(path, "base_config.yaml")) as f:
@@ -77,10 +85,14 @@ class AlfWorldTask(Task):
             split = "eval_out_of_distribution"
             N_TASKS = 134
 
-        env = getattr(alfworld.agents.environment, config["env"]["type"])(
-            config, train_eval=split
-        )
-        assert isinstance(env, alfworld.agents.environment.AlfredTWEnv)
+        env_type = config["env"]["type"]
+        if env_type != "AlfredTWEnv":
+            raise ValueError(
+                f"This repo runs ALFWorld text games only (AlfredTWEnv); got {env_type!r}. "
+                "Importing AlfredThorEnv pulls in OpenCV/Unity and is not supported on CPU hosts."
+            )
+        env = AlfredTWEnv(config, train_eval=split)
+        assert isinstance(env, AlfredTWEnv)
         env = env.init_env(batch_size=1)
 
         # MPO: load per-task meta-plans (keyed by reset obs). None -> no workflows.

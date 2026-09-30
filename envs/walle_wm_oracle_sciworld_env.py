@@ -32,7 +32,11 @@ logger = logging.getLogger("agent_eval")
 
 
 class WalleWMOracleSciWorldEnv(WalleOracleSciWorldEnv, WMSciWorldEnv):
-    """Reject-signal validity gate composed with our belief-state WM (query + optional push)."""
+    """Reject-signal validity gate composed with our belief-state WM.
+
+    ``push_mode="none"`` is query + gate (``walle_oracle_wm``).
+    ``push_mode="belief"`` is always-on push + gate (no query).
+    """
 
     def __init__(self, task, **kwargs):
         super().__init__(task, **kwargs)

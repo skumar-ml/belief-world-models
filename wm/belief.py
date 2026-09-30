@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-from wm.affinity_prior import receptacle_type, uniform_prior
+from wm.affinity_prior import receptacle_type, uniform_prior, zipf_prior
 
 
 # --------------------------------------------------------------------------- #
@@ -102,13 +102,20 @@ class ObjectBelief:
     located, the belief collapses (probability 1 on its receptacle) and is inert.
     """
 
-    def __init__(self, object_type: str, receptacles: List[str]):
+    def __init__(
+        self,
+        object_type: str,
+        receptacles: List[str],
+        dist: Optional[Dict[str, float]] = None,
+    ):
         # Seed the posterior with the affinity prior; located_at/instance_id stay
-        # None until the instance is actually observed somewhere.
+        # None until the instance is actually observed somewhere. `dist` overrides
+        # the uniform prior (Zipf runs pass zipf_prior).
         self.object_type = object_type
         self.located_at: Optional[str] = None   # receptacle id where the instance was found
         self.instance_id: Optional[str] = None  # the specific object id bound to this belief
-        self.dist: Dict[str, float] = uniform_prior(object_type, receptacles)
+        seeded = uniform_prior(object_type, receptacles) if dist is None else dist
+        self.dist: Dict[str, float] = dict(seeded)
 
     def collapse(self, receptacle_id: str, instance_id: Optional[str] = None) -> None:
         # Instance found: pin all mass on its receptacle and bind the concrete id.
@@ -140,12 +147,26 @@ class ObjectBelief:
 class BeliefState:
     """The full Stage-1 world model for one episode."""
 
-    def __init__(self, goal: Goal, receptacles: List[str], track_belief: bool = True):
+    def __init__(
+        self,
+        goal: Goal,
+        receptacles: List[str],
+        track_belief: bool = True,
+        report_probabilities: bool = True,
+        placement: str = "uniform",
+    ):
         # Start every known receptacle unsearched; objects/agent are discovered via observe().
         self.goal = goal
         # Ablation switch: when False, drop the probabilistic layer entirely (no affinity
         # prior, no ObjectBelief) and answer where-is from observed facts only.
         self.track_belief = track_belief
+        # When False, where-is still uses this distribution to choose the candidate
+        # set, but the answer lists those receptacles in random order with no masses.
+        self.report_probabilities = report_probabilities
+        # "zipf" seeds the target beliefs from the shared rank table. Uniform
+        # runs keep the instance-uniform affinity prior. Only the goal object
+        # type is resampled in the games, so other types stay on uniform_prior.
+        self.placement = placement or "uniform"
         self.receptacles: Dict[str, Receptacle] = {
             r: Receptacle(id=r) for r in receptacles
         }
@@ -154,10 +175,25 @@ class BeliefState:
         self.inventory: Set[str] = set()
         # One belief per required instance of the target type (count for picktwo).
         # Skipped for the deterministic-only ablation.
-        self.target_beliefs: List[ObjectBelief] = [
-            ObjectBelief(goal.target_type, receptacles)
-            for _ in range(max(1, goal.count))
-        ] if track_belief else []
+        if track_belief and self.placement == "zipf":
+            # Drop the goal receptacle type on place-in tasks so the prior does
+            # not put mass on a receptacle that would already finish the episode.
+            # Look-at names the lamp, which is not a container goal.
+            exclude = None
+            if goal.act != "look" and goal.dest_recep_type:
+                exclude = [goal.dest_recep_type]
+            seed = zipf_prior(goal.target_type, receptacles, exclude_types=exclude)
+            self.target_beliefs = [
+                ObjectBelief(goal.target_type, receptacles, dist=seed)
+                for _ in range(max(1, goal.count))
+            ]
+        elif track_belief:
+            self.target_beliefs = [
+                ObjectBelief(goal.target_type, receptacles)
+                for _ in range(max(1, goal.count))
+            ]
+        else:
+            self.target_beliefs = []
 
     # ----------------------------------------------------------------- updates
     def _ensure_object(self, obj_id: str) -> Obj:

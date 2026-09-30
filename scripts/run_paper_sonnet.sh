@@ -1,16 +1,16 @@
 #!/bin/bash
-# Run Sonnet 4.6 paper cells (Tables 1 and 2): single run, API via LiteLLM.
+# Run Sonnet 4.6 paper cells (Figure 3): single run, API via LiteLLM.
 #
-# Grid: 2 benchmarks x 2 agents x 4 permutations = 16 cells (no Memory ablation)
+# Grid: 3 benchmarks x 2 agents x 4 permutations = 24 cells (no Memory ablation)
 #
 # Usage:
 #   bash scripts/run_paper_sonnet.sh
 #   BENCHMARK=alfworld bash scripts/run_paper_sonnet.sh
+#   BENCHMARK=babyai bash scripts/run_paper_sonnet.sh
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
 SPLIT="${SPLIT:-test}"
-MAX_STEPS="${MAX_STEPS:-30}"
 BENCHMARK="${BENCHMARK:-all}"
 
 ALF_CELLS=(
@@ -35,24 +35,47 @@ SCI_CELLS=(
     "sciworld_reflact_walle_oracle_wm:sciworld_reflact_walle_oracle_wm"
 )
 
+BABY_CELLS=(
+    "react:babyai_react"
+    "react_walle_oracle:babyai_react_walle_oracle"
+    "react_wm:babyai_react_wm"
+    "react_walle_oracle_wm:babyai_react_walle_oracle_wm"
+    "reflact:babyai_reflact"
+    "reflact_walle_oracle:babyai_reflact_walle_oracle"
+    "reflact_wm:babyai_reflact_wm"
+    "reflact_walle_oracle_wm:babyai_reflact_walle_oracle_wm"
+)
+
 run_cells() {
+    local max_steps="$1"
+    shift
     local cells=("$@")
     for cell in "${cells[@]}"; do
         METHOD="${cell%%:*}"
         EXP_CONFIG="${cell##*:}"
         echo "=== Sonnet $METHOD ==="
-        METHOD="$METHOD" EXP_CONFIG="$EXP_CONFIG" SPLIT="$SPLIT" \
-            MAX_STEPS="$MAX_STEPS" OVERRIDE=1 \
-            bash scripts/run_api.sh || exit 1
+        if [ -n "$max_steps" ]; then
+            METHOD="$METHOD" EXP_CONFIG="$EXP_CONFIG" SPLIT="$SPLIT" \
+                MAX_STEPS="$max_steps" OVERRIDE=1 \
+                bash scripts/run_api.sh || exit 1
+        else
+            METHOD="$METHOD" EXP_CONFIG="$EXP_CONFIG" SPLIT="$SPLIT" \
+                OVERRIDE=1 \
+                bash scripts/run_api.sh || exit 1
+        fi
     done
 }
 
 if [ "$BENCHMARK" = "alfworld" ] || [ "$BENCHMARK" = "all" ]; then
-    run_cells "${ALF_CELLS[@]}"
+    run_cells "${MAX_STEPS:-30}" "${ALF_CELLS[@]}"
 fi
 
 if [ "$BENCHMARK" = "sciworld" ] || [ "$BENCHMARK" = "all" ]; then
-    run_cells "${SCI_CELLS[@]}"
+    run_cells "" "${SCI_CELLS[@]}"
+fi
+
+if [ "$BENCHMARK" = "babyai" ] || [ "$BENCHMARK" = "all" ]; then
+    run_cells "${BABYAI_MAX_STEPS:-64}" "${BABY_CELLS[@]}"
 fi
 
 echo "Sonnet paper grid complete."

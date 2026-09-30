@@ -47,6 +47,10 @@ class State:
         # WALL-E-only: actions rejected "in imagination" by the rule gate. Do NOT count as
         # env steps (see envs/walle_alfworld_env.py); tracked separately like query_steps.
         self.walle_rejections = 0
+        # SciWorld: running-max score after each real env step. WM queries and
+        # WALL-E rejections do not appear here. Empty on ALFWorld / BabyAI and
+        # on dumps from before this field existed.
+        self.reward_trace: List[float] = []
 
     @classmethod
     def load_json(cls, json_dict: Dict[str, Any]):
@@ -65,6 +69,7 @@ class State:
         state.query_steps = info.get("query_steps", 0)
         state.walle_rejections = info.get("walle_rejections", 0)
         state.max_steps = info.get("max_steps", None)
+        state.reward_trace = list(info.get("reward_trace") or [])
         return state
 
     @property
@@ -86,5 +91,14 @@ class State:
             "query_steps": self.query_steps,
             "walle_rejections": self.walle_rejections,
             "max_steps": self.max_steps,
+            "reward_trace": list(self.reward_trace),
         })
         return history
+
+    def append_reward_trace(self) -> None:
+        """Record running-max reward after one env-budget step.
+
+        WM queries and WALL-E rejections must not call this (they are not env steps).
+        """
+        val = 0.0 if self.reward is None else float(self.reward)
+        self.reward_trace.append(val)

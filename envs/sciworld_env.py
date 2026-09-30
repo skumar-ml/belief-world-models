@@ -93,6 +93,8 @@ class SciWorldEnv(BaseEnv):
             self.state.steps += 1
             self.bad_steps += 1
             self.noop_steps = 0
+            # Not a real env step: do not append reward_trace. Queries and
+            # WALL-E rejections already skip record_observation.
             if self.state.steps >= self.max_steps:
                 self.state.finished = True
                 self.state.success = False
@@ -130,6 +132,8 @@ class SciWorldEnv(BaseEnv):
             self.state.reward = score
 
         self.state.steps += 1
+        # One running-max point per real env step (not queries / WALL-E rejects).
+        self.state.append_reward_trace()
 
         # Termination is decoupled from the success METRIC. We do NOT force-stop the
         # moment the score crosses the threshold; the agent runs to a natural episode

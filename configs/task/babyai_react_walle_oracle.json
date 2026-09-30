@@ -1,0 +1,18 @@
+{
+    "benchmark": "babyai",
+    "agent": "react",
+    "permutation": "walle_oracle",
+    "task": {
+        "task_class": "BabyAITask",
+        "filepath": "data/babyai"
+    },
+    "env_config": {
+        "env_class": "WalleOracleBabyAIEnv",
+        "instruction_path": "prompt/instructions/babyai_react_walle_oracle_inst.txt",
+        "max_steps": 64,
+        "num_dists": 0,
+        "walle_max_retries": 5,
+        "prompt_max_obs": 16,
+        "prompt_compact_walle": true
+    }
+}

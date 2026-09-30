@@ -77,15 +77,24 @@ class _WalleGateMixin:
         return "reject", action_str
 
     def _emit_rejection(self, llm_output: str):
-        """Record the rejected turn + an imagination observation; no env step."""
+        """Record the rejected turn + an imagination observation; no env step.
+
+        In push mode the belief line is appended after the rejection so the
+        latest user turn still carries location / inventory / where-is. The
+        rejection text itself still starts with ``[World model]``, which
+        ``walle_state_transform`` uses to skip imagination turns.
+        """
         result = self._last_gate_result
         self.state.history.append({"role": "assistant", "content": llm_output})
         suggestion = result.get("suggestion", "") or ""
         answer = f"[World model] {result['feedback']} {suggestion}".strip()
-        self.state.history.append({"role": "user", "content": f"Observation: {answer}"})
+        observation = f"Observation: {answer}"
+        if getattr(self, "_push_enabled", lambda: False)() and getattr(self, "belief", None) is not None:
+            observation = self._with_push(observation)
+        self.state.history.append({"role": "user", "content": observation})
         self.state.walle_rejections += 1
         self._consecutive_rejections += 1
-        return f"Observation: {answer}", self.state
+        return observation, self.state
 
 
 class WalleAlfWorldEnv(_WalleGateMixin, AlfWorldEnv):
@@ -104,12 +113,14 @@ class WalleAlfWorldEnv(_WalleGateMixin, AlfWorldEnv):
 
 
 class WalleWMAlfWorldEnv(_WalleGateMixin, WMAlfWorldEnv):
-    """WALL-E gate composed with our belief-state WM (query + optional push).
+    """WALL-E gate composed with our belief-state WM (query and/or push).
 
-    The gate governs the 9 physical verbs. `query` and `think:` are not WALL-E verbs
-    (convert_action -> None), so they pass through to WMAlfWorldEnv.step untouched, where
-    the belief-query / push machinery runs as usual. The belief only folds real env
-    observations (accepted actions), which is correct — rejected actions never happened.
+    ``push_mode="none"`` is permutation ``wm_walle`` (query + gate).
+    ``push_mode="belief"`` is permutation ``wm_push_walle`` (always-on push + gate,
+    no query). The gate governs the 9 physical verbs. `query` and `think:` are not
+    WALL-E verbs (convert_action -> None), so they pass through to WMAlfWorldEnv.step
+    untouched. The belief only folds real env observations (accepted actions) —
+    rejected actions never happened.
     """
 
     def __init__(self, task, **kwargs):

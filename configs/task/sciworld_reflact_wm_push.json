@@ -1,0 +1,18 @@
+{
+    "benchmark": "sciworld",
+    "agent": "reflact",
+    "permutation": "wm_push",
+    "task": {
+        "task_class": "SciWorldTask",
+        "filepath": ""
+    },
+    "env_config": {
+        "env_class": "WMSciWorldEnv",
+        "push_mode": "belief",
+        "instruction_path": "prompt/instructions/sciworld_reflact_wm_push_inst.txt",
+        "icl_path": "prompt/icl_examples/sciworld_reflact_wm_push_pertask_icl.json",
+        "icl_format": "first",
+        "max_steps": 100,
+        "simplification": "noElectricalAction,openDoors,selfWateringFlowerPots,teleportAction,openContainers"
+    }
+}

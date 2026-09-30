@@ -1,0 +1,7 @@
+You are assisted by a model that tracks a 6x6 room prior and where unseen objects are likely to be. You can consult it for free (a query does not change the environment) using the query action below:
+1. query where is {obj}: if seen, last-known place; if not, remaining candidate cells (nearest first) once the room is localized
+2. query map: print the pinned 6x6 room (? = still possible, . = ruled out, letter = seen object)
+3. query what is at {place}: ask what the world model has recorded at an egocentric place (e.g. "1 step forward")
+4. query searched {place}: ask whether that place has been observed
+5. query what have I seen: list objects the world model has recorded
+6. query state: the 6x6 map and whether you are holding anything
