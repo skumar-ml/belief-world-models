@@ -16,6 +16,9 @@
     <a href="https://arxiv.org/abs/2609.00455">
       <img src="https://img.shields.io/badge/arXiv-BB--WM-green" alt="Paper PDF">
     </a>
+    <a href="https://huggingface.co/datasets/skumar-ml/belief-world-models">
+      <img src="https://img.shields.io/badge/Hugging%20Face-BB--WM-yellow" alt="Hugging Face Dataset">
+    </a>
         <!-- <a href='#'>
         <img src='https://img.shields.io/badge/Project_Page-BB--WM-blue' alt='Project Page'></a> -->
      </br>
@@ -216,7 +219,7 @@ Each directory contains `<task_id>.json` trajectories, `metrics.json`, `run_conf
 
 Permutations: `original` (ALFWorld / BabyAI) or `regular` (ScienceWorld), `wm` (Belief), `walle` / `walle_oracle` (WALL-E), `wm_walle` / `walle_oracle_wm` (BB-WM), `wm_det` (Memory), `wm_no_prob` (Belief-NoProb).
 
-**Pre-computed trajectories** from the paper are not included in this repo; they will be hosted separately (Drive/Dropbox).
+**Pre-computed trajectories** from the paper are in the [Hugging Face dataset](https://huggingface.co/datasets/skumar-ml/belief-world-models). The dataset uses the layout above.
 
 ## Method × config reference
 
